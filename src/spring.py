@@ -16,7 +16,7 @@ class Spring:
 
         self.query_vector_z_norm = (self.query_vector - np.mean(self.query_vector)) / np.std(self.query_vector)
         self.D = np.full((self.query_vector.shape[0]+1, 1), np.inf, dtype=np.float64)
-        self.S = np.empty((self.query_vector.shape[0], 1), dtype=np.int64)
+        self.S = np.ones_like(self.D, dtype=np.int64)
         self.t = 0
 
     def distance(self, x: float) -> float:
@@ -30,15 +30,26 @@ class Spring:
             case _:
                 raise ValueError("Invalid distance type.")
 
-    def dtw(self, x: float) -> Self:
+    def update(self, x: float) -> Self:
         self.t += 1
         new_column = np.hstack((0, self.distance(x)))[..., np.newaxis]
         self.D = np.hstack((self.D, new_column))
+        self.S = np.hstack((self.S, np.zeros_like(new_column, dtype=np.int64)))
+        self.S[0, self.t] = self.t
 
         for i in range(1, self.D.shape[0]):
             sub_d = np.copy(self.D[i-1:i+1, -2:])
             sub_d[1,1] = np.inf
-            self.D[i, -1] = self.D[i, -1] + sub_d.min()
+            d_best = sub_d.min()
+            self.D[i, self.t] = self.D[i, self.t] + d_best
+            match sub_d[0, 1] == d_best, sub_d[1, 0] == d_best, sub_d[0, 0] == d_best:
+                case np.True_, *_:
+                    self.S[i, self.t] = self.S[i-1, self.t]
+                case _, np.True_, _:
+                    self.S[i, self.t] = self.S[i, self.t-1]
+                case _, _, np.True_:
+                    self.S[i, self.t] = self.S[i - 1, self.t-1]
         return self
 
-
+    def search(self):
+        pass
