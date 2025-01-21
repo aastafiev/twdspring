@@ -18,7 +18,7 @@ def test_post_init_valid_query_vector():
     assert spring.S.shape == (4, 1)
     assert spring.t == 0
 
-def test_update_method():
+def test_update_state_method():
     etalon_d = np.array([
         [np.inf, 0, 0, 0, 0, 0, 0, 0],
         [np.inf, 36, 1, 25, 1, 25, 36, 4],
@@ -39,7 +39,7 @@ def test_update_method():
 
     x = [5, 12, 6, 10, 6, 5, 13]
     for i in x:
-        spring.update(i)
+        spring.update_state(i)
     
     np.testing.assert_equal(spring.D, etalon_d)
     np.testing.assert_equal(spring.S, etalon_s)

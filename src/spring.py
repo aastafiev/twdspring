@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from typing import Self
 
 import numpy as np
 
@@ -7,6 +6,7 @@ import numpy as np
 @dataclass
 class Spring:
     query_vector: np.ndarray
+    epsilon: float = 1.0
     distance_type: str = 'quadratic'
     use_z_norm: bool = False
 
@@ -30,7 +30,7 @@ class Spring:
             case _:
                 raise ValueError("Invalid distance type.")
 
-    def update(self, x: float) -> Self:
+    def update_state(self, x: float):
         self.t += 1
         new_column = np.hstack((0, self.distance(x)))[..., np.newaxis]
         self.D = np.hstack((self.D, new_column))
@@ -49,7 +49,8 @@ class Spring:
                     self.S[i, self.t] = self.S[i, self.t-1]
                 case _, _, np.True_:
                     self.S[i, self.t] = self.S[i - 1, self.t-1]
-        return self
 
-    def search(self):
-        pass
+    def search_step(self, x: float):
+        self.update_state(x)
+        # TODO: Second part of algorithm
+
