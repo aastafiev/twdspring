@@ -1,11 +1,39 @@
+[build-system]
+requires = ["setuptools >= 61.0"]
+build-backend = "setuptools.build_meta"
+
 [project]
-name = "SPRING"
-version = "0.0.1"
+name = "springpy"
 description = "Stream Monitoring under the Time Warping Distance"
+readme = "README.md"
+license = {text = "GNU GPLv3"}
 authors = [
     {name = "Aleksey Astafiev", email = "aastafiev@gmail.com"}
 ]
+classifiers = [
+    # How mature is this project? Common values are
+  #   3 - Alpha
+  #   4 - Beta
+  #   5 - Production/Stable
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Data Scientists",
+    "Intended Audience :: Data Analytics",
+    "Programming Language :: Python :: 3.12",
+]
+keywords = ["time warping distance", "steam", "online", "dtw", "pattern", "search pattern"]
+dependencies = ["numpy"]
+dynamic = ["version"]
 requires-python = ">=3.12"
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.dynamic]
+version = {attr = "springpy.__version__"}
 
 [tool.pytest.ini_options]
 log_cli=true
