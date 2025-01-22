@@ -21,7 +21,8 @@ classifiers = [
     "Intended Audience :: Data Analytics",
     "Programming Language :: Python :: 3.12",
 ]
-keywords = ["time warping distance", "steam", "online", "dtw", "pattern", "search pattern"]
+keywords = ["time warping distance", "steam", "online", "dtw", "pattern", "search pattern",
+            "monitoring", "stream monitoring", "time series", "time series analysis", "distance"]
 dependencies = ["numpy"]
 dynamic = ["version"]
 requires-python = ">=3.12"
