@@ -33,7 +33,7 @@ dev = ["pytest", "pip-tools"]
 where = ["src"]
 
 [tool.setuptools.dynamic]
-version = {attr = "springpy.__version__"}
+version = {attr = "src.__version__"}
 
 [tool.pytest.ini_options]
 log_cli=true
