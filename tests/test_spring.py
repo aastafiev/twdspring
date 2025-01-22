@@ -39,7 +39,7 @@ def test_update_state_method():
 
     x = [5, 12, 6, 10, 6, 5, 13]
     for i in x:
-        spring.update_step().update_state(i)
+        spring.update_tick().update_state(i)
     
     np.testing.assert_equal(spring.D, etalon_d)
     np.testing.assert_equal(spring.S, etalon_s)

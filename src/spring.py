@@ -34,7 +34,7 @@ class Spring:
             case _:
                 raise ValueError("Invalid distance type.")
 
-    def update_step(self) -> Self:
+    def update_tick(self) -> Self:
         self.t += 1
         return self
 
@@ -59,7 +59,7 @@ class Spring:
         return self
 
     def search_step(self, x: float):
-        self.update_step().update_state(x)
+        self.update_tick().update_state(x)
 
         if self.d_min <= self.epsilon:
             if ((self.D[:, -1] >= self.d_min) | (self.S[:, -1] > self.t_end))[1:].all():
