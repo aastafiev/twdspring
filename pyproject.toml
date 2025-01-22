@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "springpy"
 description = "Stream Monitoring under the Time Warping Distance"
 readme = "README.md"
-license = {text = "GNU GPLv3"}
+license = {text = "GPL-3.0-or-later"}
 authors = [
     {name = "Aleksey Astafiev", email = "aastafiev@gmail.com"}
 ]
