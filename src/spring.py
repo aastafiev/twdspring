@@ -35,20 +35,20 @@ class Spring:
         new_column = np.hstack((0, self.distance(x)))[..., np.newaxis]
         self.D = np.hstack((self.D, new_column))
         self.S = np.hstack((self.S, np.zeros_like(new_column, dtype=np.int64)))
-        self.S[0, self.t] = self.t
+        self.S[0, -1] = self.t
 
         for i in range(1, self.D.shape[0]):
             sub_d = np.copy(self.D[i-1:i+1, -2:])
             sub_d[1,1] = np.inf
             d_best = sub_d.min()
-            self.D[i, self.t] = self.D[i, self.t] + d_best
+            self.D[i, -1] = self.D[i, -1] + d_best
             match sub_d[0, 1] == d_best, sub_d[1, 0] == d_best, sub_d[0, 0] == d_best:
                 case np.True_, *_:
-                    self.S[i, self.t] = self.S[i-1, self.t]
+                    self.S[i, -1] = self.S[i-1, -1]
                 case _, np.True_, _:
-                    self.S[i, self.t] = self.S[i, self.t-1]
+                    self.S[i, -1] = self.S[i, -2]
                 case _, _, np.True_:
-                    self.S[i, self.t] = self.S[i - 1, self.t-1]
+                    self.S[i, -1] = self.S[i - 1, -2]
 
     def search_step(self, x: float):
         self.update_state(x)
