@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Self
 
 import numpy as np
 
@@ -6,7 +7,7 @@ import numpy as np
 @dataclass
 class Spring:
     query_vector: np.ndarray
-    epsilon: float = 1.0
+    epsilon: float
     distance_type: str = 'quadratic'
     use_z_norm: bool = False
 
@@ -17,7 +18,10 @@ class Spring:
         self.query_vector_z_norm = (self.query_vector - np.mean(self.query_vector)) / np.std(self.query_vector)
         self.D = np.full((self.query_vector.shape[0]+1, 1), np.inf, dtype=np.float64)
         self.S = np.ones_like(self.D, dtype=np.int64)
+
         self.t = 0
+        self.d_min = np.inf
+        self.t_start, self.t_end = self.t, self.t
 
     def distance(self, x: float) -> float:
         query_vector = self.query_vector_z_norm if self.use_z_norm else self.query_vector
@@ -30,8 +34,11 @@ class Spring:
             case _:
                 raise ValueError("Invalid distance type.")
 
-    def update_state(self, x: float):
+    def update_step(self) -> Self:
         self.t += 1
+        return self
+
+    def update_state(self, x: float) -> Self:
         new_column = np.hstack((0, self.distance(x)))[..., np.newaxis]
         self.D = np.hstack((self.D, new_column))
         self.S = np.hstack((self.S, np.zeros_like(new_column, dtype=np.int64)))
@@ -49,8 +56,23 @@ class Spring:
                     self.S[i, -1] = self.S[i, -2]
                 case _, _, np.True_:
                     self.S[i, -1] = self.S[i - 1, -2]
+        return self
 
     def search_step(self, x: float):
-        self.update_state(x)
-        # TODO: Second part of algorithm
+        self.update_step().update_state(x)
 
+        if self.d_min <= self.epsilon:
+            if ((self.D[:, -1] >= self.d_min) | (self.S[:, -1] > self.t_end))[1:].all():
+                yield 'match', float(self.d_min), self.t_start, self.t_end, self.t
+                self.d_min = np.inf
+                self.D[1:, -1] = np.where(self.S[1:, -1] <= self.t_end, np.inf, self.D[1:, -1])
+        if self.D[-1, -1] <= self.epsilon and self.D[-1, -1] < self.d_min:
+            self.d_min = self.D[-1, -1]
+            self.t_start, self.t_end = int(self.S[-1, -1]), self.t
+            yield 'tracking', float(self.d_min), self.t_start, self.t_end, self.t
+
+        self.D[0, -1] = np.inf
+        self.D[:, -2] = self.D[:, -1]
+        self.D = self.D[:, 0:self.D.shape[1] - 1]  # for column vector return
+        self.S[:, -2] = self.S[:, -1]
+        self.S = self.S[:, 0:self.S.shape[1] - 1]  # for column vector return

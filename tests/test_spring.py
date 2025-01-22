@@ -6,11 +6,11 @@ from src.spring import Spring
 
 def test_post_init_invalid_query_vector():
     with pytest.raises(ValueError, match="Query vector must be 1-dimensional."):
-        Spring(query_vector=np.array([[1, 2], [3, 4]]))
+        Spring(query_vector=np.array([[1, 2], [3, 4]]), epsilon=1)
 
 def test_post_init_valid_query_vector():
     query_vector = np.array([1, 2, 3])
-    spring = Spring(query_vector=query_vector)
+    spring = Spring(query_vector=query_vector, epsilon=1)
     
     assert spring.query_vector_z_norm is not None
     assert spring.D.shape == (4, 1)
@@ -35,11 +35,26 @@ def test_update_state_method():
     ], dtype=np.int64)
 
     query = np.array((11, 6, 9, 4))
-    spring = Spring(query_vector=query)
+    spring = Spring(query_vector=query, epsilon=15)
 
     x = [5, 12, 6, 10, 6, 5, 13]
     for i in x:
-        spring.update_state(i)
+        spring.update_step().update_state(i)
     
     np.testing.assert_equal(spring.D, etalon_d)
     np.testing.assert_equal(spring.S, etalon_s)
+
+
+def test_search_step():
+    etalon = [('tracking', 14.0, 2, 3, 3), ('tracking', 6.0, 2, 5, 5), ('match', 6.0, 2, 5, 7)]
+
+    query = np.array((11, 6, 9, 4))
+    spring = Spring(query_vector=query, epsilon=15)
+    
+    x = [5, 12, 6, 10, 6, 5, 13]
+    results = [
+        (status, d_min, t_start, t_end, tick)
+        for val in x for status, d_min, t_start, t_end, tick in spring.search_step(val)
+    ]
+
+    assert etalon == results
