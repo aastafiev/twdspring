@@ -29,12 +29,8 @@ requires-python = ">=3.12"
 [project.optional-dependencies]
 dev = ["pytest", "pip-tools"]
 
-[tool.setuptools.packages.find]
-where = ["src"]
-include = ["src"]
-
 [tool.setuptools.dynamic]
-version = {attr = "src.__version__"}
+version = {attr = "springpy.__version__"}
 
 [tool.pytest.ini_options]
 log_cli=true

@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from src.spring import Spring
+from springpy import Spring
 
 
 def test_post_init_invalid_query_vector():
