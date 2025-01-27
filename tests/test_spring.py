@@ -1,7 +1,9 @@
+from itertools import dropwhile
+
 import numpy as np
 import pytest
 
-from springpy import Spring
+from springpy import Searcher, Spring
 
 
 def test_post_init_invalid_query_vector():
@@ -18,7 +20,8 @@ def test_post_init_valid_query_vector():
     assert spring.S.shape == (4, 1)
     assert spring.t == 0
 
-def test_update_state_method():
+@pytest.mark.parametrize('use_z_norm', [False, True], ids=['No z-norm', 'With z-norm'])
+def test_update_state_method(use_z_norm):
     etalon_d = np.array([
         [np.inf, 0, 0, 0, 0, 0, 0, 0],
         [np.inf, 36, 1, 25, 1, 25, 36, 4],
@@ -35,26 +38,43 @@ def test_update_state_method():
     ], dtype=np.int64)
 
     query = np.array((11, 6, 9, 4))
-    spring = Spring(query_vector=query, epsilon=15)
+    spring = Spring(query_vector=query, epsilon=15, use_z_norm=use_z_norm)
 
     x = [5, 12, 6, 10, 6, 5, 13]
-    for i in x:
-        spring.update_tick().update_state(i)
+    for val in x:
+        spring.update_state(spring.z_norm(val))
     
     np.testing.assert_equal(spring.D, etalon_d)
     np.testing.assert_equal(spring.S, etalon_s)
 
 
-def test_search_step():
-    etalon = [('tracking', 14.0, 2, 3, 3), ('tracking', 6.0, 2, 5, 5), ('match', 6.0, 2, 5, 7)]
+@pytest.mark.parametrize('use_z_norm', [False, True], ids=['No z-norm', 'With z-norm'])
+def test_search_step(use_z_norm):
+    match use_z_norm:
+        case False:
+            etalon = [
+                Searcher('tracking', 14.0, 3, 4, 4),
+                Searcher('tracking', 14.0, 3, 4, 5),
+                Searcher('tracking', 6.0, 3, 6, 6),
+                Searcher('tracking', 6.0, 3, 6, 7),
+                Searcher('match', 6.0, 3, 6, 8),
+            ]
+            epsilon = 15
+        case True:
+            etalon = [
+                Searcher(status='tracking', distance=0.38867348067295193, t_start=3, t_end=6, t=6),
+                Searcher(status='match', distance=0.38867348067295193, t_start=3, t_end=6, t=7),
+                Searcher(status='match', distance=0.38867348067295193, t_start=3, t_end=6, t=8),
+            ]
+            epsilon = 0.5
 
     query = np.array((11, 6, 9, 4))
-    spring = Spring(query_vector=query, epsilon=15)
-    
-    x = [5, 12, 6, 10, 6, 5, 13]
-    results = [
-        (status, d_min, t_start, t_end, tick)
-        for val in x for status, d_min, t_start, t_end, tick in spring.search_step(val)
-    ]
+    spring = Spring(query_vector=query, epsilon=epsilon, use_z_norm=use_z_norm)
 
-    assert etalon == results
+    x = [5, 6, 12, 6, 10, 6, 5, 13]
+    results = []
+    search_gen = spring.search()
+    next(search_gen)
+    results = (search_gen.send(val) for val in x)
+
+    assert etalon == list(dropwhile(lambda x: not x.status, results))

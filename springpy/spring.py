@@ -1,13 +1,22 @@
+import logging
+from collections import namedtuple
 from dataclasses import dataclass
-from typing import Self
+from typing import Generator, Self
 
 import numpy as np
+
+log = logging.getLogger(__name__)
+
+
+Searcher = namedtuple('Searcher', ['status', 'distance', 't_start', 't_end', 't'])
 
 
 @dataclass
 class Spring:
     query_vector: np.ndarray
     epsilon: float
+    alpha: float = None
+    ddof: int = 0
     distance_type: str = 'quadratic'
     use_z_norm: bool = False
 
@@ -22,6 +31,12 @@ class Spring:
         self.t = 0
         self.d_min = np.inf
         self.t_start, self.t_end = self.t, self.t
+        self.mean, self.variance = 0.0, 0.0
+        self.M2 = 0.0
+        self.__status = None
+        self.__d_min_status = self.d_min
+        self.__t_start_status = self.t_start
+        self.__t_end_status = self.t_end
 
     def distance(self, x: float) -> float:
         query_vector = self.query_vector_z_norm if self.use_z_norm else self.query_vector
@@ -34,15 +49,46 @@ class Spring:
             case _:
                 raise ValueError("Invalid distance type.")
 
-    def update_tick(self) -> Self:
+    def update_tick(self):
         self.t += 1
-        return self
+
+    def moving_average(self, x: float):
+        # 2 / (n + 1) for n-th element. Because self.update_trick() running before.
+        alpha = self.alpha if self.alpha is not None else 2 / self.t
+
+        match self.t:
+            case 1:
+                self.mean = x
+            case _:
+                self.mean = (1 - alpha) * self.mean + alpha * x
+
+    def online_variance(self, x: float) -> float:
+        delta = x - self.mean
+        self.moving_average(x)
+        delta2 = x - self.mean
+        self.M2 += delta*delta2
+        self.variance = self.M2 / (self.t - self.ddof)
+
+    def z_norm(self, x: float) -> float:
+        self.update_tick()
+        if self.use_z_norm:
+            self.online_variance(x)
+            return (x - self.mean) / np.sqrt(self.variance) if self.variance != 0 else np.nan
+        return x
 
     def update_state(self, x: float) -> Self:
-        new_column = np.hstack((0, self.distance(x)))[..., np.newaxis]
+        match not np.isnan(x):
+            case np.True_:
+                new_column = np.hstack((0, self.distance(x)))[..., np.newaxis]
+            case _:
+                new_column = self.D[:, self.D.shape[1] - 1:]
+
         self.D = np.hstack((self.D, new_column))
         self.S = np.hstack((self.S, np.zeros_like(new_column, dtype=np.int64)))
         self.S[0, -1] = self.t
+
+        if np.isnan(x):
+            return self
 
         for i in range(1, self.D.shape[0]):
             sub_d = np.copy(self.D[i-1:i+1, -2:])
@@ -58,21 +104,32 @@ class Spring:
                     self.S[i, -1] = self.S[i - 1, -2]
         return self
 
-    def search_step(self, x: float):
-        self.update_tick().update_state(x)
+    def search(self) -> Generator[Searcher, float, None]:
+        while True:
+            x: float = yield Searcher(self.__status, float(self.__d_min_status), int(self.__t_start_status),
+                                      int(self.__t_end_status), self.t)
+            self.update_state(self.z_norm(x))
 
-        if self.d_min <= self.epsilon:
-            if ((self.D[:, -1] >= self.d_min) | (self.S[:, -1] > self.t_end))[1:].all():
-                yield 'match', float(self.d_min), self.t_start, self.t_end, self.t
-                self.d_min = np.inf
-                self.D[1:, -1] = np.where(self.S[1:, -1] <= self.t_end, np.inf, self.D[1:, -1])
-        if self.D[-1, -1] <= self.epsilon and self.D[-1, -1] < self.d_min:
-            self.d_min = self.D[-1, -1]
-            self.t_start, self.t_end = int(self.S[-1, -1]), self.t
-            yield 'tracking', float(self.d_min), self.t_start, self.t_end, self.t
+            if self.d_min <= self.epsilon:
+                if ((self.D[:, -1] >= self.d_min) | (self.S[:, -1] > self.t_end))[1:].all():
+                    self.__status = 'match'
+                    self.__d_min_status = self.d_min
+                    self.__t_start_status = self.t_start
+                    self.__t_end_status = self.t_end
 
-        self.D[0, -1] = np.inf
-        self.D[:, -2] = self.D[:, -1]
-        self.D = self.D[:, 0:self.D.shape[1] - 1]  # for column vector return
-        self.S[:, -2] = self.S[:, -1]
-        self.S = self.S[:, 0:self.S.shape[1] - 1]  # for column vector return
+                    self.d_min = np.inf
+                    self.D[1:, -1] = np.where(self.S[1:, -1] <= self.t_end, np.inf, self.D[1:, -1])
+            if self.D[-1, -1] <= self.epsilon and self.D[-1, -1] < self.d_min:
+                self.d_min = self.D[-1, -1]
+                self.t_start, self.t_end = int(self.S[-1, -1]), self.t
+
+                self.__status = 'tracking'
+                self.__d_min_status = self.d_min
+                self.__t_start_status = self.t_start
+                self.__t_end_status = self.t_end
+
+            self.D[0, -1] = np.inf
+            self.D[:, -2] = self.D[:, -1]
+            self.D = self.D[:, 0:self.D.shape[1] - 1]  # for column vector return
+            self.S[:, -2] = self.S[:, -1]
+            self.S = self.S[:, 0:self.S.shape[1] - 1]  # for column vector return
