@@ -10,9 +10,9 @@ def pytest_configure():
         True: {
             'epsilon': 0.5,
             'searcher': [
-                Searcher(status='tracking', distance=0.38867348067295193, t_start=3, t_end=6, t=6),
-                Searcher(status='match', distance=0.38867348067295193, t_start=3, t_end=6, t=7),
-                Searcher(status='match', distance=0.38867348067295193, t_start=3, t_end=6, t=8),
+                Searcher('tracking', 0.38867348067295193, 2, 7, 6),
+                Searcher('match', 0.38867348067295193, 2, 7, 6),
+                Searcher('match', 0.38867348067295193, 2, 7, 6),
             ],
             'D': np.array([[np.inf, np.inf, np.inf, 0., 0., 0., 0., 0.],
                            [np.inf, np.inf, np.inf, 5.28938991, 0.58575279, 4.90037434, 4.93394741, 0.0994402],
@@ -29,11 +29,11 @@ def pytest_configure():
         False: {
             'epsilon': 15,
             'searcher': [
-                Searcher('tracking', 14.0, 3, 4, 4),
-                Searcher('tracking', 14.0, 3, 4, 5),
-                Searcher('tracking', 6.0, 3, 6, 6),
-                Searcher('tracking', 6.0, 3, 6, 7),
-                Searcher('match', 6.0, 3, 6, 8),
+                Searcher('tracking', 14.0, 2, 5, 4),
+                Searcher('tracking', 14.0, 2, 5, 4),
+                Searcher('tracking', 6.0, 2, 7, 6),
+                Searcher('tracking', 6.0, 2, 7, 6),
+                Searcher('match', 6.0, 2, 7, 6),
             ],
             'D': np.array([
                 [np.inf, 0, 0, 0, 0, 0, 0, 0],
