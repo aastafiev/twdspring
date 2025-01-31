@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from springpy import Searcher
+from spring_twd import Searcher
 
 
 def pytest_configure():
