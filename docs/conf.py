@@ -36,5 +36,5 @@ html_theme = 'alabaster'
 html_static_path = ['_static']
 html_theme_options = {
     'github_button': True,
-    'github_repo': 'https://github.com/aastafiev/spring',
+    'github_repo': 'https://github.com/aastafiev/twdspring',
 }
