@@ -15,21 +15,20 @@ Searcher = namedtuple('Searcher', ['status', 'twd_min', 't_start', 't_end', 't']
 class Spring:
     """
     A class used to represent a Spring object for time series analysis based on Time Warping Distance.
+    """
 
-    Attributes:
-    query_vector (numpy.ndarray): The query vector used for distance calculations.
-    epsilon (float): The epsilon value used for thresholding.
-    alpha (float, optional): The smoothing factor for moving average calculations. If value is None aplpha will be equal 2 / (k + 1) where k is the number of past time steps in consideration of moving average. Defaults to None.
-    ddof (int, optional): The delta degrees of freedom for variance calculations. Defaults to 0.
-    distance_type (str, optional): The type of distance calculation ('quadratic' or 'absolute'). Defaults to 'quadratic'.
-    use_z_norm (bool, optional): Flag to indicate if z-score normalization should be used. Defaults to False.
-    """  # noqa: E501
     query_vector: np.ndarray
+    """The query vector used for distance calculations."""
     epsilon: float
+    """The epsilon value used for thresholding."""
     alpha: float = None
+    """The smoothing factor for moving average calculations. If value is None aplpha will be equal 2 / (k + 1) where k is the number of past time steps in consideration of moving average. Defaults to None."""  # noqa: E501
     ddof: int = 0
+    """The delta degrees of freedom for variance calculations. Defaults to 0."""
     distance_type: str = 'quadratic'
+    """The type of distance calculation ('quadratic' or 'absolute'). Defaults to 'quadratic'."""
     use_z_norm: bool = False
+    """Flag to indicate if z-score normalization should be used. Defaults to False."""
 
     def __post_init__(self):
         if self.query_vector.ndim != 1:
@@ -55,7 +54,7 @@ class Spring:
         The internal time step counter.
 
         Returns:
-        int: The current time step.
+            int: The current time step.
         """
         return self.__t
 
@@ -68,13 +67,13 @@ class Spring:
         It can be either 'quadratic' or 'absolute'.
 
         Parameters:
-        x (float): The input value for which the distance is calculated.
+            x (float): The input value for which the distance is calculated.
 
         Returns:
-        float: The calculated distance.
+            float: The calculated distance.
 
         Raises:
-        ValueError: If the `distance_type` is not 'quadratic' or 'absolute'.
+            ValueError: If the `distance_type` is not 'quadratic' or 'absolute'.
         """
         query_vector = self.query_vector_z_norm if self.use_z_norm else self.query_vector
 
@@ -97,7 +96,7 @@ class Spring:
         Updates the moving average of the input value x.
 
         Parameters:
-        x (float): The input value used to update the moving average.
+            x (float): The input value used to update the moving average.
         """
         # 2 / (n + 1) for n-th element. Because self.update_trick() running before.
         alpha = self.alpha if self.alpha is not None else 2 / self.__t
@@ -113,10 +112,10 @@ class Spring:
         Updates the online variance based on the input value x.
 
         Parameters:
-        x (float): The input value used to update the variance.
+            x (float): The input value used to update the variance.
 
         Returns:
-        float: The updated variance.
+            float: The updated variance.
         """
         delta = x - self.mean
         self.moving_average(x)
@@ -129,10 +128,10 @@ class Spring:
         Normalizes the input value x using z-score normalization if enabled.
 
         Parameters:
-        x (float): The input value to be normalized.
+            x (float): The input value to be normalized.
 
         Returns:
-        float: The normalized value or NaN if variance is zero.
+            float: The normalized value or NaN if variance is zero.
         """
         self.update_tick()
         if self.use_z_norm:
@@ -145,10 +144,10 @@ class Spring:
         Updates the state of the Spring object based on the input value x.
 
         Parameters:
-        x (float): The input value used to update the state.
+            x (float): The input value used to update the state.
 
         Returns:
-        Spring: The updated Spring object.
+            Spring: The updated Spring object.
         """
         match not np.isnan(x):
             case np.True_:
@@ -182,7 +181,7 @@ class Spring:
         A generator method that yields a Searcher object and updates the state based on the input value.
 
         Yields:
-        Searcher: An object containing the current status, minimum twd, start time index, end time index, and current time index of 'tracking' or 'match' status (All indexes are 0-based). 
+            Searcher: An object containing the current status, minimum twd, start time index, end time index, and current time index of 'tracking' or 'match' status (All indexes are 0-based). 
 
         The method continues to update the state and yields Searcher objects until the generator is closed.
         """  # noqa: E501

@@ -3,8 +3,23 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Springpy documentation
-======================
+Spring Project
+==============
+
+This project implements `Stream Monitoring under the Time Warping Distance <https://www.cs.cmu.edu/~christos/PUBLICATIONS/ICDE07-spring.pdf>`_
+
+Installation
+------------
+
+.. code-block:: console
+
+   pip install springpy
+
+License
+-------
+
+This project is licensed under the GNU GPLv3.
+
 
 .. toctree::
    :maxdepth: 2

@@ -28,7 +28,7 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install ruff
-        pip install -r requirements-dev.txt
+        pip install -e .[dev]
     - name: Run Ruff
       run: |
         ruff check --output-format=github --select E,F,I,COM,A,LOG,N,EXE,ICN,G --line-length 120 --exclude .bzr,.direnv,.eggs,.git,.git-rewrite,.hg,.ipynb_checkpoints,.mypy_cache,.nox,.pants.d,.pyenv,.pytest_cache,.pytype,.ruff_cache,.svn,.tox,.venv,.vscode,__pypackages__,_build,buck-out,build,dist,node_modules,site-packages,venv --respect-gitignore .

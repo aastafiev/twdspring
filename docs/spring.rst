@@ -3,7 +3,7 @@ SpringPy API
 
 
 The ``Spring`` class
-------------------------
+--------------------
 
 .. autoclass:: springpy.spring.Spring
    :members:
