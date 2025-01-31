@@ -13,7 +13,7 @@ sys.path.insert(0, str(Path(__file__).parents[1]))
 project = 'Spring'
 copyright = '2025, Aleksey Astafiev'  # noqa: A001
 author = 'Aleksey Astafiev'
-release = '0.1.3'
+release = '0.1.4'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
