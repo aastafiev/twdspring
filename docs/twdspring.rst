@@ -9,3 +9,12 @@ The ``Spring`` class
    :members:
    :undoc-members:
    :show-inheritance:
+
+
+The ``Searcher`` class
+----------------------
+
+.. autoclass:: twdspring.spring.Searcher
+   :members:
+   :undoc-members:
+   :show-inheritance:

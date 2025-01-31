@@ -1,14 +1,26 @@
 import logging
-from collections import namedtuple
 from dataclasses import dataclass
-from typing import Generator, Self
+from typing import Generator, NamedTuple, Self
 
 import numpy as np
 
 log = logging.getLogger(__name__)
 
 
-Searcher = namedtuple('Searcher', ['status', 'twd_min', 't_start', 't_end', 't'])
+class Searcher(NamedTuple):
+    """
+    A class used to represent searching result
+    """
+    status: str
+    """Search status ('tracking' or 'match')."""
+    twd_min: float
+    """The minimum time warping distance."""
+    t_start: int
+    """The start time index (0-based)."""
+    t_end: int
+    """The end time index (0-based)."""
+    t: int
+    """The time index of status (0-based)."""
 
 
 @dataclass
