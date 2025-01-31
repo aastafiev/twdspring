@@ -17,8 +17,7 @@ classifiers = [
   #   5 - Production/Stable
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
-    "Intended Audience :: Data Scientists",
-    "Intended Audience :: Data Analytics",
+    "Intended Audience :: Science/Research",
     "Programming Language :: Python :: 3.12",
 ]
 keywords = ["time warping distance", "steam", "online", "dtw", "pattern", "search pattern",
