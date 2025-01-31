@@ -22,6 +22,7 @@ release = '0.1.1'
 extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.napoleon",
+    "sphinx.ext.githubpages",
 ]
 autoclass_content = 'both'
 
