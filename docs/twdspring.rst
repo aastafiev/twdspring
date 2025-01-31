@@ -1,5 +1,5 @@
-SpringPy API
-============
+Spring API
+==========
 
 
 The ``Spring`` class
