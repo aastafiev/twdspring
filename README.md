@@ -21,7 +21,7 @@ This project implements [Stream Monitoring under the Time Warping Distance](http
 To install the Spring Project, follow these steps:
 
 ```bash
-pip install springpy
+pip install twdspring
 ```
 
 ## Documentation
