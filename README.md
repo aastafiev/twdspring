@@ -26,7 +26,7 @@ pip install springpy
 
 ## Documentation
 
-[https://aastafiev.github.io/spring/](https://aastafiev.github.io/spring/)
+[https://aastafiev.github.io/twdspring/](https://aastafiev.github.io/twdspring/)
 
 ## Contributing
 

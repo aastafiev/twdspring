@@ -31,8 +31,11 @@ requires-python = ">=3.12"
 dev = ["pytest"]
 docs = ["sphinx"]
 
+[tool.setuptools.packages.find]
+include = ["twdspring"]
+
 [tool.setuptools.dynamic]
-version = {attr = "springpy.__version__"}
+version = {attr = "twdspring.__version__"}
 
 [tool.pytest.ini_options]
 log_cli=true
