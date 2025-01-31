@@ -10,7 +10,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parents[1]))
 
-project = 'Spring (Time Warping Distance)'
+project = 'Spring'
 copyright = '2025, Aleksey Astafiev'  # noqa: A001
 author = 'Aleksey Astafiev'
 release = '0.1.1'
