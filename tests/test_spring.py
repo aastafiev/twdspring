@@ -3,7 +3,7 @@ from itertools import dropwhile
 import numpy as np
 import pytest
 
-from spring_twd import Spring
+from twdspring import Spring
 
 
 def test_post_init_invalid_query_vector():
