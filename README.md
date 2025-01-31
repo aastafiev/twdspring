@@ -8,6 +8,7 @@ Welcome to the Spring Project!
   - [Table of Contents](#table-of-contents)
   - [Introduction](#introduction)
   - [Installation](#installation)
+  - [Documentation](#documentation)
   - [Contributing](#contributing)
   - [License](#license)
 
@@ -22,6 +23,10 @@ To install the Spring Project, follow these steps:
 ```bash
 pip install springpy
 ```
+
+## Documentation
+
+[https://aastafiev.github.io/spring/](https://aastafiev.github.io/spring/)
 
 ## Contributing
 
