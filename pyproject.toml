@@ -28,7 +28,8 @@ dynamic = ["version"]
 requires-python = ">=3.12"
 
 [project.optional-dependencies]
-dev = ["pytest", "sphinx"]
+dev = ["pytest"]
+docs = ["sphinx"]
 
 [tool.setuptools.dynamic]
 version = {attr = "springpy.__version__"}

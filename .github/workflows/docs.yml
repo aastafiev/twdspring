@@ -1,0 +1,37 @@
+name: Publish Sphinx Documentation
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  publish_sphinx_docs:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.12"]
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v3
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .[dosc]
+      - name: Sphinx build
+        run: |
+          sphinx-apidoc -o docs ./springpy --separate
+          sphinx-build docs docs/_build/html
+      - name: Deploy
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          publish_branch: gh-pages
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: docs/_build/html
+          force_orphan: true
