@@ -20,4 +20,5 @@ This project is licensed under the GNU GPLv3.
    :maxdepth: 2
    :caption: Contents:
 
+   quickstart
    twdspring

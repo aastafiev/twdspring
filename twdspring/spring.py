@@ -121,7 +121,7 @@ class Spring:
 
     def moving_variance(self, x: float) -> float:
         """
-        Updates the online variance based on the input value x.
+        Updates the moving variance based on the input value x.
 
         Parameters:
             x (float): The input value used to update the variance.
