@@ -64,27 +64,28 @@ def test_z_norm():
 
 
 def test_search_z_norm():
-    # etalon = pytest.etalons[use_z_norm]['searcher']
-    # epsilon = pytest.etalons[use_z_norm]['epsilon']
     spring = Spring(query_vector=pytest.query, epsilon=.5, use_z_norm=True)
-
     x = [5, 6, 12, 6, 10, 6, 5, 13]
-    z_norm = list(dropwhile(lambda x: not x.status, (spring.step(val) for val in x)))
+    etalon = list(dropwhile(lambda x: not x.status, (spring.step(val) for val in x)))
 
     spring.reset()
-    # x_z_norm = np.array([spring.update_tick().z_norm(val).current_x for val in x])
-    # spring.reset()
-    # spring.use_z_norm = False
-    spring.query_vector_z_norm = (pytest.query - np.mean(pytest.query)) / np.std(pytest.query)
-    pre_z_norm = list(dropwhile(lambda x: not x.status, (spring.step(val) for val in x)))
-
-    assert z_norm == pre_z_norm
+    query_vector_z_norm = (pytest.query - np.mean(pytest.query)) / np.std(pytest.query)
+    spring.query_vector_z_norm = query_vector_z_norm
+    z_norm_true = list(dropwhile(lambda x: not x.status, (spring.step(val) for val in x)))
+    assert etalon == z_norm_true
 
     spring.reset()
     x_z_norm = np.array([spring.update_tick().z_norm(val).current_x for val in x])
     spring.reset()
     spring.use_z_norm = False
-    spring.query_vector = (pytest.query - np.mean(pytest.query)) / np.std(pytest.query)
+    spring.query_vector = query_vector_z_norm
     pre_z_norm = list(dropwhile(lambda x: not x.status, (spring.step(val) for val in x_z_norm)))
+    assert etalon == pre_z_norm
 
-    assert z_norm == pre_z_norm
+    spring = Spring(query_vector=pytest.query, query_vector_z_norm=query_vector_z_norm, epsilon=.5, use_z_norm=True)
+    z_norm_true = list(dropwhile(lambda x: not x.status, (spring.step(val) for val in x)))
+    assert etalon == z_norm_true
+
+    spring = Spring(query_vector=query_vector_z_norm, epsilon=.5, use_z_norm=False)
+    pre_z_norm = list(dropwhile(lambda x: not x.status, (spring.step(val) for val in x_z_norm)))
+    assert etalon == pre_z_norm

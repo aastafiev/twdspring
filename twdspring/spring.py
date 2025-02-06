@@ -45,6 +45,8 @@ class Spring:
     """The z-score normalized query vector. Will compute z-norm of query vector if None. Defaults to None."""
 
     def __post_init__(self, query_vector_z_norm):
+        if self.query_vector.size == 0:
+            raise ValueError("Query vector must not be empty.")
         if self.query_vector.ndim != 1:
             raise ValueError("Query vector must be 1-dimensional.")
         if self.epsilon <= 0:
@@ -57,6 +59,8 @@ class Spring:
             raise ValueError("Invalid distance type.")
         if query_vector_z_norm is None:
             self.query_vector_z_norm = (self.query_vector - np.mean(self.query_vector)) / np.std(self.query_vector)
+        else:
+            self.query_vector_z_norm = query_vector_z_norm
 
         self.reset()
 
