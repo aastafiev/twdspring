@@ -6,9 +6,13 @@ import pytest
 from twdspring import Spring
 
 
-def test_post_init_invalid_query_vector():
+def test_post_init_errors():
     with pytest.raises(ValueError, match="Query vector must be 1-dimensional."):
         Spring(query_vector=np.array([[1, 2], [3, 4]]), epsilon=1)
+
+    with pytest.raises(ValueError, match="Query vector z-norm must be 1-dimensional and size equal to query verctor."):
+        Spring(query_vector=np.array([1, 2, 3]), query_vector_z_norm=np.array([1, 2, 3, 4]), epsilon=1)
+
 
 def test_post_init_valid_query_vector():
     query_vector = np.array([1, 2, 3])
@@ -76,13 +80,14 @@ def test_search_z_norm():
 
     spring.reset()
     x_z_norm = np.array([spring.update_tick().z_norm(val).current_x for val in x])
-    spring.reset()
     spring.use_z_norm = False
     spring.query_vector = query_vector_z_norm
+    spring.reset()
     pre_z_norm = list(dropwhile(lambda x: not x.status, (spring.step(val) for val in x_z_norm)))
     assert etalon == pre_z_norm
 
-    spring = Spring(query_vector=pytest.query, query_vector_z_norm=query_vector_z_norm, epsilon=.5, use_z_norm=True)
+    spring = Spring(query_vector=np.empty_like(query_vector_z_norm), query_vector_z_norm=query_vector_z_norm,
+                    epsilon=.5, use_z_norm=True)
     z_norm_true = list(dropwhile(lambda x: not x.status, (spring.step(val) for val in x)))
     assert etalon == z_norm_true
 

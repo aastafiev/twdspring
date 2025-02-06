@@ -1,5 +1,5 @@
 import logging
-from dataclasses import InitVar, dataclass
+from dataclasses import dataclass
 from typing import Generator, NamedTuple, Self
 
 import numpy as np
@@ -41,10 +41,10 @@ class Spring:
     """The type of distance calculation ('quadratic' or 'absolute'). Defaults to 'quadratic'."""
     use_z_norm: bool = False
     """Flag to indicate if z-score normalization should be used. Defaults to False."""
-    query_vector_z_norm: InitVar[np.ndarray | None] = None 
+    query_vector_z_norm: np.ndarray = None 
     """The z-score normalized query vector. Will compute z-norm of query vector if None. Defaults to None."""
 
-    def __post_init__(self, query_vector_z_norm):
+    def __post_init__(self):
         if self.query_vector.size == 0:
             raise ValueError("Query vector must not be empty.")
         if self.query_vector.ndim != 1:
@@ -57,10 +57,10 @@ class Spring:
             raise ValueError("Delta degrees of freedom must be greater than or equal to 0")
         if self.distance_type not in ['quadratic', 'absolute']:
             raise ValueError("Invalid distance type.")
-        if query_vector_z_norm is None:
+        if self.query_vector_z_norm is None:
             self.query_vector_z_norm = (self.query_vector - np.mean(self.query_vector)) / np.std(self.query_vector)
-        else:
-            self.query_vector_z_norm = query_vector_z_norm
+        elif self.query_vector_z_norm.size != self.query_vector.size:
+            raise ValueError("Query vector z-norm must be 1-dimensional and size equal to query verctor.")
 
         self.reset()
 
