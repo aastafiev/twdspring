@@ -45,8 +45,36 @@ class Spring:
     def __post_init__(self):
         if self.query_vector.ndim != 1:
             raise ValueError("Query vector must be 1-dimensional.")
+        if self.epsilon <= 0:
+            raise ValueError("Epsilon must be greater than 0.")
 
         self.query_vector_z_norm = (self.query_vector - np.mean(self.query_vector)) / np.std(self.query_vector)
+        self.reset()
+
+    @property
+    def t(self) -> int:
+        """
+        The internal time step counter.
+
+        Returns:
+            int: The current time step.
+        """
+        return self.__t
+
+    @property
+    def current_x(self) -> float:
+        """
+        The current normalized/non-normalized input value.
+
+        Returns:
+            float: The current normalized/non-normalized input value.
+        """
+        return self.__curr_x
+
+    def reset(self) -> Self:
+        """
+        Resets the internal state of the Spring object.
+        """
         self.D = np.full((self.query_vector.shape[0]+1, 1), np.inf, dtype=np.float64)
         self.S = np.ones_like(self.D, dtype=np.int64)
 
@@ -59,17 +87,8 @@ class Spring:
         self.__d_min_status = self.d_min
         self.__t_start_status = self.t_start
         self.__t_end_status = self.t_end
-
-    @property
-    def t(self) -> int:
-        """
-        The internal time step counter.
-
-        Returns:
-            int: The current time step.
-        """
-        return self.__t
-
+        self.__curr_x = np.nan
+        return self
 
     def distance(self, x: float) -> float:
         """
@@ -97,11 +116,12 @@ class Spring:
             case _:
                 raise ValueError("Invalid distance type.")
 
-    def update_tick(self):
+    def update_tick(self) -> Self:
         """
         Increments the internal time step counter.
         """
         self.__t += 1
+        return self
 
     def moving_average(self, x: float):
         """
@@ -135,7 +155,7 @@ class Spring:
         self.M2 += delta*delta2
         self.variance = self.M2 / (self.__t - self.ddof)
 
-    def z_norm(self, x: float) -> float:
+    def z_norm(self, x: float) -> Self:
         """
         Normalizes the input value x using z-score normalization if enabled.
 
@@ -145,13 +165,15 @@ class Spring:
         Returns:
             float: The normalized value or NaN if variance is zero.
         """
-        self.update_tick()
-        if self.use_z_norm:
-            self.moving_variance(x)
-            return (x - self.mean) / np.sqrt(self.variance) if self.variance != 0 else np.nan
-        return x
+        match self.use_z_norm:
+            case True:
+                self.moving_variance(x)
+                self.__curr_x = (x - self.mean) / np.sqrt(self.variance) if self.variance != 0 else np.nan
+            case False:
+                self.__curr_x = x
+        return self
 
-    def update_state(self, x: float) -> Self:
+    def update_state(self) -> Self:
         """
         Updates the state of the Spring object based on the input value x.
 
@@ -161,9 +183,9 @@ class Spring:
         Returns:
             Spring: The updated Spring object.
         """
-        match not np.isnan(x):
+        match not np.isnan(self.__curr_x):
             case np.True_:
-                new_column = np.hstack((0, self.distance(x)))[..., np.newaxis]
+                new_column = np.hstack((0, self.distance(self.__curr_x)))[..., np.newaxis]
             case _:
                 new_column = self.D[:, self.D.shape[1] - 1:]
 
@@ -171,7 +193,7 @@ class Spring:
         self.S = np.hstack((self.S, np.zeros_like(new_column, dtype=np.int64)))
         self.S[0, -1] = self.__t
 
-        if np.isnan(x):
+        if np.isnan(self.__curr_x):
             return self
 
         for i in range(1, self.D.shape[0]):
@@ -200,7 +222,7 @@ class Spring:
         while True:
             x: float = yield Searcher(self.__status, float(self.__d_min_status), int(self.__t_start_status - 1),
                                       int(self.__t_end_status + 1), self.__t_end_status)
-            self.update_state(self.z_norm(x))
+            self.update_tick().z_norm(x).update_state()
 
             if self.d_min <= self.epsilon:
                 if ((self.D[:, -1] >= self.d_min) | (self.S[:, -1] > self.t_end))[1:].all():

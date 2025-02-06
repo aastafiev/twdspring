@@ -22,6 +22,10 @@ dependencies = ["numpy"]
 dynamic = ["version"]
 requires-python = ">=3.12"
 
+[project.urls]
+Homepage = "https://aastafiev.github.io/twdspring/"
+Source = "https://github.com/aastafiev/twdspring"
+
 [project.optional-dependencies]
 dev = ["pytest"]
 docs = ["sphinx"]

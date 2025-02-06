@@ -30,7 +30,7 @@ def test_update_state_method(use_z_norm):
 
     x = [5, 12, 6, 10, 6, 5, 13]
     for val in x:
-        spring.update_state(spring.z_norm(val))
+        spring.update_tick().z_norm(val).update_state()
     
     np.testing.assert_allclose(spring.D, etalon_d)
     np.testing.assert_allclose(spring.S, etalon_s)
@@ -50,3 +50,19 @@ def test_search_step(use_z_norm):
     results = (search_gen.send(val) for val in x)
 
     assert etalon == list(dropwhile(lambda x: not x.status, results))
+
+
+def test_z_norm():
+    spring = Spring(query_vector=pytest.query, epsilon=1, use_z_norm=True)
+
+    x = [5, 6, 12, 6, 10, 6, 5, 13]
+    res_x_z_norm = np.array([spring.update_tick().z_norm(val).current_x for val in x])
+
+    res_x_z_norm_search = []
+    search_gen = spring.reset().search()
+    next(search_gen)
+    for val in x:
+        search_gen.send(val)
+        res_x_z_norm_search.append(spring.current_x)
+
+    np.testing.assert_allclose(res_x_z_norm, np.array(res_x_z_norm_search))
