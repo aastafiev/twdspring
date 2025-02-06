@@ -1,5 +1,5 @@
 import logging
-from dataclasses import dataclass
+from dataclasses import InitVar, dataclass
 from typing import Generator, NamedTuple, Self
 
 import numpy as np
@@ -41,15 +41,27 @@ class Spring:
     """The type of distance calculation ('quadratic' or 'absolute'). Defaults to 'quadratic'."""
     use_z_norm: bool = False
     """Flag to indicate if z-score normalization should be used. Defaults to False."""
+    query_vector_z_norm: InitVar[np.ndarray | None] = None 
+    """The z-score normalized query vector. Will compute z-norm of query vector if None. Defaults to None."""
 
-    def __post_init__(self):
+    def __post_init__(self, query_vector_z_norm):
         if self.query_vector.ndim != 1:
             raise ValueError("Query vector must be 1-dimensional.")
         if self.epsilon <= 0:
             raise ValueError("Epsilon must be greater than 0.")
+        if self.alpha is not None and (self.alpha <= 0 or self.alpha >= 1):
+            raise ValueError("Alpha must be in the range (0, 1).")
+        if self.ddof < 0:
+            raise ValueError("Delta degrees of freedom must be greater than or equal to 0")
+        if self.distance_type not in ['quadratic', 'absolute']:
+            raise ValueError("Invalid distance type.")
+        if query_vector_z_norm is None:
+            self.query_vector_z_norm = (self.query_vector - np.mean(self.query_vector)) / np.std(self.query_vector)
 
-        self.query_vector_z_norm = (self.query_vector - np.mean(self.query_vector)) / np.std(self.query_vector)
         self.reset()
+
+        self.search_gen = self._search()
+        next(self.search_gen)
 
     @property
     def t(self) -> int:
@@ -210,7 +222,7 @@ class Spring:
                     self.S[i, -1] = self.S[i - 1, -2]
         return self
 
-    def search(self) -> Generator[Searcher, float, None]:
+    def _search(self) -> Generator[Searcher, float, None]:
         """
         A generator method that yields a Searcher object and updates the state based on the input value.
 
@@ -247,3 +259,6 @@ class Spring:
             self.D = self.D[:, 0:self.D.shape[1] - 1]  # for column vector return
             self.S[:, -2] = self.S[:, -1]
             self.S = self.S[:, 0:self.S.shape[1] - 1]  # for column vector return
+
+    def step(self, x: float) -> Searcher:
+        return self.search_gen.send(x)

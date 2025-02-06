@@ -37,32 +37,54 @@ def test_update_state_method(use_z_norm):
 
 
 @pytest.mark.parametrize('use_z_norm', [False, True], ids=['No z-norm', 'With z-norm'])
-def test_search_step(use_z_norm):
+def test_search(use_z_norm):
     etalon = pytest.etalons[use_z_norm]['searcher']
     epsilon = pytest.etalons[use_z_norm]['epsilon']
 
     spring = Spring(query_vector=pytest.query, epsilon=epsilon, use_z_norm=use_z_norm)
 
     x = [5, 6, 12, 6, 10, 6, 5, 13]
-    results = []
-    search_gen = spring.search()
-    next(search_gen)
-    results = (search_gen.send(val) for val in x)
+    results = (spring.step(val) for val in x)
 
     assert etalon == list(dropwhile(lambda x: not x.status, results))
 
 
 def test_z_norm():
     spring = Spring(query_vector=pytest.query, epsilon=1, use_z_norm=True)
+    x = [5, 6, 12, 6, 10, 6, 5, 13]
+    x_z_norm = np.array([spring.update_tick().z_norm(val).current_x for val in x])
+    spring.reset()
+
+    x_z_norm_search = []
+    for val in x:
+        spring.step(val)
+        x_z_norm_search.append(spring.current_x)
+
+    np.testing.assert_allclose(x_z_norm, np.array(x_z_norm_search))
+
+
+def test_search_z_norm():
+    # etalon = pytest.etalons[use_z_norm]['searcher']
+    # epsilon = pytest.etalons[use_z_norm]['epsilon']
+    spring = Spring(query_vector=pytest.query, epsilon=.5, use_z_norm=True)
 
     x = [5, 6, 12, 6, 10, 6, 5, 13]
-    res_x_z_norm = np.array([spring.update_tick().z_norm(val).current_x for val in x])
+    z_norm = list(dropwhile(lambda x: not x.status, (spring.step(val) for val in x)))
 
-    res_x_z_norm_search = []
-    search_gen = spring.reset().search()
-    next(search_gen)
-    for val in x:
-        search_gen.send(val)
-        res_x_z_norm_search.append(spring.current_x)
+    spring.reset()
+    # x_z_norm = np.array([spring.update_tick().z_norm(val).current_x for val in x])
+    # spring.reset()
+    # spring.use_z_norm = False
+    spring.query_vector_z_norm = (pytest.query - np.mean(pytest.query)) / np.std(pytest.query)
+    pre_z_norm = list(dropwhile(lambda x: not x.status, (spring.step(val) for val in x)))
 
-    np.testing.assert_allclose(res_x_z_norm, np.array(res_x_z_norm_search))
+    assert z_norm == pre_z_norm
+
+    spring.reset()
+    x_z_norm = np.array([spring.update_tick().z_norm(val).current_x for val in x])
+    spring.reset()
+    spring.use_z_norm = False
+    spring.query_vector = (pytest.query - np.mean(pytest.query)) / np.std(pytest.query)
+    pre_z_norm = list(dropwhile(lambda x: not x.status, (spring.step(val) for val in x_z_norm)))
+
+    assert z_norm == pre_z_norm
