@@ -1,5 +1,5 @@
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Generator, NamedTuple, Self
 
 import numpy as np
@@ -23,7 +23,7 @@ class Searcher(NamedTuple):
     """The time index of status (0-based)."""
 
 
-@dataclass
+@dataclass(eq=False)
 class Spring:
     """
     A class used to represent a Spring object for time series analysis based on Time Warping Distance.
@@ -33,7 +33,7 @@ class Spring:
     """The query vector used for distance calculations."""
     epsilon: float
     """The epsilon value used for thresholding."""
-    alpha: float = None
+    alpha: float | None = None
     """The smoothing factor for moving average calculations. If value is None aplpha will be equal 2 / (k + 1) where k is the number of past time steps in consideration of moving average. Defaults to None."""  # noqa: E501
     ddof: int = 0
     """The delta degrees of freedom for variance calculations. Defaults to 0."""
@@ -41,8 +41,37 @@ class Spring:
     """The type of distance calculation ('quadratic' or 'absolute'). Defaults to 'quadratic'."""
     use_z_norm: bool = False
     """Flag to indicate if z-score normalization should be used. Defaults to False."""
-    query_vector_z_norm: np.ndarray = None 
+    query_vector_z_norm: np.ndarray | None = None 
     """The z-score normalized query vector. Will compute z-norm of query vector if None. Defaults to None."""
+
+    D: np.ndarray | None = field(init=False)
+    """The distance matrix used for calculations. Defaults to None."""
+    S: np.ndarray | None = field(init=False)
+    """The state matrix used for calculations. Defaults to None."""
+    t: int = field(init=False, default=0)
+    """The internal time step counter. Defaults to 0."""
+    current_x: float = field(init=False, default=np.nan)
+    """The current normalized/non-normalized input value. Defaults to NaN."""
+    d_min: float = field(init=False, default=np.inf)
+    """The minimum time warping distance. Defaults to infinity."""
+    t_start: int = field(init=False, default=0)
+    """The start time index (0-based). Defaults to 0."""
+    t_end: int = field(init=False, default=0)
+    """The end time index (0-based). Defaults to 0."""
+    status: str | None = field(init=False, default=None)
+    """The current status of the Spring object. Defaults to None."""
+    d_min_status: np.float64 = field(init=False, default=np.inf)
+    """The minimum time warping distance status. Defaults to infinity."""
+    t_start_status: int = field(init=False, default=0)
+    """The start time index status (0-based). Defaults to 0."""
+    t_end_status: int = field(init=False, default=0)
+    """The end time index status (0-based). Defaults to 0."""
+    mean: float = field(init=False, default=0.0)
+    """The moving average of the input values. Defaults to 0.0."""
+    variance: float = field(init=False, default=0.0)
+    """The moving variance of the input values. Defaults to 0.0."""
+    M2: float = field(init=False, default=0.0)
+    """The second moment of the input values. Defaults to 0.0."""
 
     def __post_init__(self):
         if self.query_vector.size == 0:
@@ -67,26 +96,6 @@ class Spring:
         self.search_gen = self._search()
         next(self.search_gen)
 
-    @property
-    def t(self) -> int:
-        """
-        The internal time step counter.
-
-        Returns:
-            int: The current time step.
-        """
-        return self.__t
-
-    @property
-    def current_x(self) -> float:
-        """
-        The current normalized/non-normalized input value.
-
-        Returns:
-            float: The current normalized/non-normalized input value.
-        """
-        return self.__curr_x
-
     def reset(self) -> Self:
         """
         Resets the internal state of the Spring object.
@@ -94,17 +103,67 @@ class Spring:
         self.D = np.full((self.query_vector.shape[0]+1, 1), np.inf, dtype=np.float64)
         self.S = np.ones_like(self.D, dtype=np.int64)
 
-        self.__t = 0
+        self.t = 0
         self.d_min = np.inf
-        self.t_start, self.t_end = self.__t, self.__t
+        self.t_start, self.t_end = self.t, self.t
         self.mean, self.variance = 0.0, 0.0
         self.M2 = 0.0
-        self.__status = None
-        self.__d_min_status = self.d_min
-        self.__t_start_status = self.t_start
-        self.__t_end_status = self.t_end
-        self.__curr_x = np.nan
+        self.status = None
+        self.d_min_status = self.d_min
+        self.t_start_status = self.t_start
+        self.t_end_status = self.t_end
+        self.current_x = np.nan
         return self
+
+    @classmethod
+    def from_dict(cls, **kwargs) -> Self:
+        """
+        Creates a Spring object from a dictionary of parameters.
+
+        Parameters:
+            **kwargs: Keyword arguments representing the parameters for the Spring object.
+
+        Returns:
+            Spring: An instance of the Spring object.
+        """
+        internal_status_keys = {'D', 'S', 't', 'current_x', 'd_min', 't_start', 't_end', 'status', 'd_min_status',
+                                't_start_status', 't_end_status', 'mean', 'variance', 'M2'}
+
+        internal_status = {key: kwargs.pop(key) for key in internal_status_keys if key in kwargs}
+        kls = cls(**kwargs)
+        for key, value in internal_status.items():
+            if hasattr(kls, key):
+                setattr(kls, key, value)
+            else:
+                raise ValueError(f"Invalid parameter '{key}' for Spring object.")
+        return kls
+
+    def __eq__(self, other: Self) -> bool:
+        """
+        Compares two Spring objects for equality.
+
+        Parameters:
+            other (Spring): The other Spring object to compare with.
+
+        Returns:
+            bool: True if the objects are equal, False otherwise.
+        """
+        if not isinstance(other, Spring):
+            return NotImplemented
+
+        exclude_keys = {'search_gen'}
+        checks = []
+        for key in self.__dict__.keys():
+            if key in exclude_keys:
+                continue
+
+            self_value = getattr(self, key)
+            if isinstance(self_value, np.ndarray):
+                checks.append(np.array_equal(self_value, getattr(other, key)))
+            else:
+                checks.append(self_value == getattr(other, key))
+        
+        return all(checks)
 
     def distance(self, x: float) -> float:
         """
@@ -136,7 +195,7 @@ class Spring:
         """
         Increments the internal time step counter.
         """
-        self.__t += 1
+        self.t += 1
         return self
 
     def moving_average(self, x: float):
@@ -147,9 +206,9 @@ class Spring:
             x (float): The input value used to update the moving average.
         """
         # 2 / (n + 1) for n-th element. Because self.update_trick() running before.
-        alpha = self.alpha if self.alpha is not None else 2 / self.__t
+        alpha = self.alpha if self.alpha is not None else 2 / self.t
 
-        match self.__t:
+        match self.t:
             case 1:
                 self.mean = x
             case _:
@@ -169,7 +228,7 @@ class Spring:
         self.moving_average(x)
         delta2 = x - self.mean
         self.M2 += delta*delta2
-        self.variance = self.M2 / (self.__t - self.ddof)
+        self.variance = self.M2 / (self.t - self.ddof)
 
     def z_norm(self, x: float) -> Self:
         """
@@ -184,9 +243,9 @@ class Spring:
         match self.use_z_norm:
             case True:
                 self.moving_variance(x)
-                self.__curr_x = (x - self.mean) / np.sqrt(self.variance) if self.variance != 0 else np.nan
+                self.current_x = (x - self.mean) / np.sqrt(self.variance) if self.variance != 0 else np.nan
             case False:
-                self.__curr_x = x
+                self.current_x = x
         return self
 
     def update_state(self) -> Self:
@@ -199,17 +258,17 @@ class Spring:
         Returns:
             Spring: The updated Spring object.
         """
-        match not np.isnan(self.__curr_x):
+        match not np.isnan(self.current_x):
             case np.True_:
-                new_column = np.hstack((0, self.distance(self.__curr_x)))[..., np.newaxis]
+                new_column = np.hstack((0, self.distance(self.current_x)))[..., np.newaxis]
             case _:
                 new_column = self.D[:, self.D.shape[1] - 1:]
 
         self.D = np.hstack((self.D, new_column))
         self.S = np.hstack((self.S, np.zeros_like(new_column, dtype=np.int64)))
-        self.S[0, -1] = self.__t
+        self.S[0, -1] = self.t
 
-        if np.isnan(self.__curr_x):
+        if np.isnan(self.current_x):
             return self
 
         for i in range(1, self.D.shape[0]):
@@ -236,27 +295,27 @@ class Spring:
         The method continues to update the state and yields Searcher objects until the generator is closed.
         """  # noqa: E501
         while True:
-            x: float = yield Searcher(self.__status, float(self.__d_min_status), int(self.__t_start_status - 1),
-                                      int(self.__t_end_status + 1), self.__t_end_status)
+            x: float = yield Searcher(self.status, float(self.d_min_status), int(self.t_start_status - 1),
+                                      int(self.t_end_status + 1), self.t_end_status)
             self.update_tick().z_norm(x).update_state()
 
             if self.d_min <= self.epsilon:
                 if ((self.D[:, -1] >= self.d_min) | (self.S[:, -1] > self.t_end))[1:].all():
-                    self.__status = 'match'
-                    self.__d_min_status = self.d_min
-                    self.__t_start_status = self.t_start
-                    self.__t_end_status = self.t_end
+                    self.status = 'match'
+                    self.d_min_status = self.d_min
+                    self.t_start_status = self.t_start
+                    self.t_end_status = self.t_end
 
                     self.d_min = np.inf
                     self.D[1:, -1] = np.where(self.S[1:, -1] <= self.t_end, np.inf, self.D[1:, -1])
             if self.D[-1, -1] <= self.epsilon and self.D[-1, -1] < self.d_min:
                 self.d_min = self.D[-1, -1]
-                self.t_start, self.t_end = int(self.S[-1, -1]), self.__t
+                self.t_start, self.t_end = int(self.S[-1, -1]), self.t
 
-                self.__status = 'tracking'
-                self.__d_min_status = self.d_min
-                self.__t_start_status = self.t_start
-                self.__t_end_status = self.t_end
+                self.status = 'tracking'
+                self.d_min_status = self.d_min
+                self.t_start_status = self.t_start
+                self.t_end_status = self.t_end
 
             self.D[0, -1] = np.inf
             self.D[:, -2] = self.D[:, -1]

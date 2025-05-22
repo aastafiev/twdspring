@@ -1,12 +1,11 @@
 import numpy as np
-import pytest
 
 from twdspring import Searcher
 
 
-def pytest_configure():
-    pytest.query = np.array((11, 6, 9, 4))
-    pytest.etalons = {
+def pytest_configure(config):
+    config.query = np.array((11, 6, 9, 4))
+    config.etalons = {
         True: {
             'epsilon': 0.5,
             'searcher': [
@@ -50,5 +49,4 @@ def pytest_configure():
                 [1, 1, 2, 2, 2, 2, 2, 2],
             ], dtype=np.int64),
         },
-
     }

@@ -1,3 +1,4 @@
+from dataclasses import asdict
 from itertools import dropwhile
 
 import numpy as np
@@ -25,12 +26,12 @@ def test_post_init_valid_query_vector():
     assert spring.t == 0
 
 @pytest.mark.parametrize('use_z_norm', [False, True], ids=['No z-norm', 'With z-norm'])
-def test_update_state_method(use_z_norm):
-    etalon_d = pytest.etalons[use_z_norm]['D']
-    etalon_s = pytest.etalons[use_z_norm]['S']
-    epsilon = pytest.etalons[use_z_norm]['epsilon']
+def test_update_state_method(request, use_z_norm):
+    etalon_d = request.config.etalons[use_z_norm]['D']
+    etalon_s = request.config.etalons[use_z_norm]['S']
+    epsilon = request.config.etalons[use_z_norm]['epsilon']
 
-    spring = Spring(query_vector=pytest.query, epsilon=epsilon, use_z_norm=use_z_norm)
+    spring = Spring(query_vector=request.config.query, epsilon=epsilon, use_z_norm=use_z_norm)
 
     x = [5, 12, 6, 10, 6, 5, 13]
     for val in x:
@@ -41,11 +42,11 @@ def test_update_state_method(use_z_norm):
 
 
 @pytest.mark.parametrize('use_z_norm', [False, True], ids=['No z-norm', 'With z-norm'])
-def test_search(use_z_norm):
-    etalon = pytest.etalons[use_z_norm]['searcher']
-    epsilon = pytest.etalons[use_z_norm]['epsilon']
+def test_search(request, use_z_norm):
+    etalon = request.config.etalons[use_z_norm]['searcher']
+    epsilon = request.config.etalons[use_z_norm]['epsilon']
 
-    spring = Spring(query_vector=pytest.query, epsilon=epsilon, use_z_norm=use_z_norm)
+    spring = Spring(query_vector=request.config.query, epsilon=epsilon, use_z_norm=use_z_norm)
 
     x = [5, 6, 12, 6, 10, 6, 5, 13]
     results = (spring.step(val) for val in x)
@@ -53,8 +54,8 @@ def test_search(use_z_norm):
     assert etalon == list(dropwhile(lambda x: not x.status, results))
 
 
-def test_z_norm():
-    spring = Spring(query_vector=pytest.query, epsilon=1, use_z_norm=True)
+def test_z_norm(request):
+    spring = Spring(query_vector=request.config.query, epsilon=1, use_z_norm=True)
     x = [5, 6, 12, 6, 10, 6, 5, 13]
     x_z_norm = np.array([spring.update_tick().z_norm(val).current_x for val in x])
     spring.reset()
@@ -67,13 +68,13 @@ def test_z_norm():
     np.testing.assert_allclose(x_z_norm, np.array(x_z_norm_search))
 
 
-def test_search_z_norm():
-    spring = Spring(query_vector=pytest.query, epsilon=.5, use_z_norm=True)
+def test_search_z_norm(request):
+    spring = Spring(query_vector=request.config.query, epsilon=.5, use_z_norm=True)
     x = [5, 6, 12, 6, 10, 6, 5, 13]
     etalon = list(dropwhile(lambda x: not x.status, (spring.step(val) for val in x)))
 
     spring.reset()
-    query_vector_z_norm = (pytest.query - np.mean(pytest.query)) / np.std(pytest.query)
+    query_vector_z_norm = (request.config.query - np.mean(request.config.query)) / np.std(request.config.query)
     spring.query_vector_z_norm = query_vector_z_norm
     z_norm_true = list(dropwhile(lambda x: not x.status, (spring.step(val) for val in x)))
     assert etalon == z_norm_true
@@ -94,3 +95,26 @@ def test_search_z_norm():
     spring = Spring(query_vector=query_vector_z_norm, epsilon=.5, use_z_norm=False)
     pre_z_norm = list(dropwhile(lambda x: not x.status, (spring.step(val) for val in x_z_norm)))
     assert etalon == pre_z_norm
+
+
+@pytest.mark.parametrize('use_z_norm', [False, True], ids=['No z-norm', 'With z-norm'])
+def test_search_persisted_status(request, use_z_norm):
+    spring = Spring(query_vector=request.config.query, epsilon=0.5, use_z_norm=use_z_norm)
+    x = [5, 6, 12, 6, 10, 6, 5, 13]
+    
+    # Get initial status
+    for val in x:
+        spring.step(val)
+
+    state = asdict(spring)
+
+    spring_new = Spring.from_dict(**state)
+    assert spring_new == spring
+    
+    # Continue pattern matching from where we left off
+    remaining_x = [10, 6, 5, 13]  # Remaining sequence that should lead to a match
+    
+    for val in remaining_x:
+        spring_new.step(val)
+    
+    assert spring_new != spring
