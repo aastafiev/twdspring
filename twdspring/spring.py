@@ -50,9 +50,9 @@ class Spring:
     """The state matrix used for calculations. Defaults to None."""
     t: int = field(init=False, default=0)
     """The internal time step counter. Defaults to 0."""
-    current_x: float = field(init=False, default=np.nan)
+    current_x: np.float64 = field(init=False, default=np.nan)
     """The current normalized/non-normalized input value. Defaults to NaN."""
-    d_min: float = field(init=False, default=np.inf)
+    d_min: np.float64 = field(init=False, default=np.inf)
     """The minimum time warping distance. Defaults to infinity."""
     t_start: int = field(init=False, default=0)
     """The start time index (0-based). Defaults to 0."""
