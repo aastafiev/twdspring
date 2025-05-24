@@ -50,9 +50,9 @@ class Spring:
     """The state matrix used for calculations. Defaults to None."""
     t: int = field(init=False, default=0)
     """The internal time step counter. Defaults to 0."""
-    current_x: np.float64 = field(init=False, default=np.nan)
+    current_x: float = field(init=False, default=float('nan'))
     """The current normalized/non-normalized input value. Defaults to NaN."""
-    d_min: np.float64 = field(init=False, default=np.inf)
+    d_min: float = field(init=False, default=float('inf'))
     """The minimum time warping distance. Defaults to infinity."""
     t_start: int = field(init=False, default=0)
     """The start time index (0-based). Defaults to 0."""
@@ -60,7 +60,7 @@ class Spring:
     """The end time index (0-based). Defaults to 0."""
     status: str | None = field(init=False, default=None)
     """The current status of the Spring object. Defaults to None."""
-    d_min_status: np.float64 = field(init=False, default=np.inf)
+    d_min_status: float = field(init=False, default=float('inf'))
     """The minimum time warping distance status. Defaults to infinity."""
     t_start_status: int = field(init=False, default=0)
     """The start time index status (0-based). Defaults to 0."""
@@ -104,7 +104,7 @@ class Spring:
         self.S = np.ones_like(self.D, dtype=np.int64)
 
         self.t = 0
-        self.d_min = np.inf
+        self.d_min = float('inf')
         self.t_start, self.t_end = self.t, self.t
         self.mean, self.variance = 0.0, 0.0
         self.M2 = 0.0
@@ -112,7 +112,7 @@ class Spring:
         self.d_min_status = self.d_min
         self.t_start_status = self.t_start
         self.t_end_status = self.t_end
-        self.current_x = np.nan
+        self.current_x = float('nan')
         return self
 
     @classmethod
@@ -243,7 +243,7 @@ class Spring:
         match self.use_z_norm:
             case True:
                 self.moving_variance(x)
-                self.current_x = (x - self.mean) / np.sqrt(self.variance) if self.variance != 0 else np.nan
+                self.current_x = float((x - self.mean) / np.sqrt(self.variance) if self.variance != 0 else np.nan)
             case False:
                 self.current_x = x
         return self
@@ -306,7 +306,7 @@ class Spring:
                     self.t_start_status = self.t_start
                     self.t_end_status = self.t_end
 
-                    self.d_min = np.inf
+                    self.d_min = float('inf')
                     self.D[1:, -1] = np.where(self.S[1:, -1] <= self.t_end, np.inf, self.D[1:, -1])
             if self.D[-1, -1] <= self.epsilon and self.D[-1, -1] < self.d_min:
                 self.d_min = self.D[-1, -1]
